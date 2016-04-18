@@ -2,7 +2,7 @@
   "name": "avent",
   "version": "0.0.1",
   "description": "A(sync) event: yet another attempt to implement the best event library",
-  "main": "index.js",
+  "main": "avent.js",
   "scripts": {
     "test": "istanbul cover _mocha --report lcovonly"
   },
