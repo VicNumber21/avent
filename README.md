@@ -1,7 +1,6 @@
 # avent
 
-TODO: correct build badges
-[![Build Status](https://semaphoreapp.com/api/v1/projects/5f3fd517-c88d-474a-9f4d-07f0a37855ce/326765/badge.png)](https://semaphoreapp.com/vic/gulp-benchmark) [![Code Climate](https://codeclimate.com/github/VicNumber21/gulp-benchmark/badges/gpa.svg)](https://codeclimate.com/github/VicNumber21/gulp-benchmark) [![Test Coverage](https://codeclimate.com/github/VicNumber21/gulp-benchmark/badges/coverage.svg)](https://codeclimate.com/github/VicNumber21/gulp-benchmark)
+[![Build Status](https://semaphoreci.com/api/v1/vic/avent/branches/master/badge.svg)](https://semaphoreci.com/vic/avent) [![Code Climate](https://codeclimate.com/github/VicNumber21/avent/badges/gpa.svg)](https://codeclimate.com/github/VicNumber21/avent) [![Test Coverage](https://codeclimate.com/github/VicNumber21/avent/badges/coverage.svg)](https://codeclimate.com/github/VicNumber21/avent/coverage) [![Issue Count](https://codeclimate.com/github/VicNumber21/avent/badges/issue_count.svg)](https://codeclimate.com/github/VicNumber21/avent)
 
 Async events' library with a guarantee of the preservation of the events' order
 
