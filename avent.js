@@ -32,7 +32,7 @@
 
   EventDispatcher.prototype.callbackExists = function (name, fn, ctx) {
     var ret = false;
-    var callbacks = this._callbacks[name];
+    var callbacks = this._callbacks[name] || [];
 
     for (var it = 0; !ret && it < callbacks.length; ++it) {
       var cb = callbacks[it];
@@ -46,7 +46,9 @@
     if (!this.callbackExists(name, fn, ctx)) {
       this.log('add callback for', name, [fn, ctx]);
 
-      this._callbacks.push({
+      var callbacks = this._callbacks[name] = this._callbacks[name] || [];
+
+      callbacks.push({
         fn: fn,
         ctx: ctx
       });
@@ -130,6 +132,8 @@
         var cb = callbacks[cbIt];
         cb.fn.apply(cb.ctx, dispatchingEvent.args);
       }
+
+      this.log('dispatched', dispatchingEvent.name, dispatchingEvent.args);
     }
   };
 
@@ -215,7 +219,7 @@
     if (this._eventDispatcher) {
       var args = [];
 
-      for (var it = 0; it < arguments.length; ++it) {
+      for (var it = 1; it < arguments.length; ++it) {
         args.push(arguments[it]);
       }
 
