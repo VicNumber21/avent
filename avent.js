@@ -7,45 +7,124 @@
     root.avent = factory();
   }
 }(this, function () {
-  var EventEmitterUtils = {};
+  var EventDispatcherUtils = {
+    _anonymousId: 0
+  };
 
-  EventEmitterUtils.createEventQueue = function () {
-    return {
-      queue: [],
-      callbacks: {}
+  EventDispatcherUtils.generateLoggerName = function () {
+    return 'Anonymous Avent ' + (++this._anonymousId);
+  };
+
+  EventDispatcherUtils.isCallbackEqualToFn = function (cb, fn) {
+    return (cb.fn === fn) || (cb.fn.originalFn && cb.fn.originalFn === fn);
+  };
+
+  EventDispatcherUtils.isCallbackInContext = function (cb, ctx) {
+    return cb.ctx = ctx;
+  };
+
+
+  var EventDispatcher = function () {
+    this._queue = [];
+    this._callbacks = {};
+    this._loggers = {};
+  };
+
+  EventDispatcher.prototype.callbackExists = function (name, fn, ctx) {
+    var ret = false;
+    var callbacks = this._callbacks[name];
+
+    for (var it = 0; !ret && it < callbacks.length; ++it) {
+      var cb = callbacks[it];
+      ret = EventDispatcherUtils.isCallbackEqualToFn(cb, fn) && EventDispatcherUtils.isCallbackInContext(cb, ctx);
+    }
+
+    return ret;
+  };
+
+  EventDispatcher.prototype.addCallback = function (name, fn, ctx) {
+    if (!this.callbackExists(name, fn, ctx)) {
+      this.log('add callback for', name, [fn, ctx]);
+
+      this._callbacks.push({
+        fn: fn,
+        ctx: ctx
+      });
     }
   };
 
-  EventEmitterUtils.callbackExists = function () {
-    //TODO
-    return false;
+  EventDispatcher.prototype.removeAllCallbacks = function (fn, ctx) {
+    if (fn || ctx) {
+      var names = Object.keys(this._callbacks);
+
+      for (var it = 0; it < names.length; ++it) {
+        this.removeCallbacks(names[it], fn, ctx);
+      }
+    }
+    else {
+      this.log('remove all callbacks');
+      this._callbacks = {};
+    }
   };
 
-  EventEmitterUtils.removeCallbacks = function (events, name, fn, ctx) {
-    //TODO
-  };
+  EventDispatcher.prototype.removeCallbacks = function (name, fn, ctx) {
+    this.log('remove callbacks for', name, [fn, ctx]);
 
-  EventEmitterUtils.cloneCallbacks = function (events, name) {
-    var clone = [];
-    var callbacks = events.callbacks[name] || [];
+    var keptCallbacks = [];
+    var currentCallbacks = this._callbacks[name] || [];
 
-    for (var it = 0; it < callbacks.length; ++it) {
-      clone.push(callbacks[it]);
+    if (fn || ctx) {
+      for (var it = 0; it < currentCallbacks.length; ++it) {
+        var cb = currentCallbacks[it];
+        var sameFn = EventDispatcherUtils.isCallbackEqualToFn(cb, fn);
+        var sameCtx = EventDispatcherUtils.isCallbackInContext(cb, ctx);
+        var isDeadCb = (fn && sameFn && ctx && sameCtx) || (fn && sameFn && !ctx) || (!fn && ctx && sameCtx);
+
+        if (!isDeadCb) {
+          keptCallbacks.push(cb);
+        }
+      }
     }
 
-    return clone;
+    if (keptCallbacks.length === 0) {
+      delete this._callbacks[name];
+    }
+    else {
+      this._callbacks[name] = keptCallbacks;
+    }
   };
 
-  EventEmitterUtils.dispatchEvents = function () {
-    var events = this._events || EventEmitterUtils.createEventQueue();
-    delete events.timer;
+  EventDispatcher.prototype.cloneCallbacks = function (name) {
+    var callbacks = this._callbacks[name] || [];
 
-    var queue = events.queue;
-    events.queue = [];
+    return callbacks.slice(0);
+  };
+
+  EventDispatcher.prototype.scheduleDispatching = function (name, args) {
+    this.log('schedule dispatching for', name, args);
+
+    if (this._callbacks[name]) {
+      this._queue.push({
+        name: name,
+        args: args
+      });
+
+      if (!this._timer) {
+        this._timer = setTimeout(this.dispatchEvents.bind(this), 0);
+      }
+    }
+  };
+
+  EventDispatcher.prototype.dispatchEvents = function () {
+    delete this._timer;
+
+    var queue = this._queue;
+    this._queue = [];
 
     for (var it = 0; it < queue.length; ++it) {
       var dispatchingEvent = queue[it];
-      var callbacks = EventEmitterUtils.cloneCallbacks(events, dispatchingEvent.name);
+      this.log('dispatching', dispatchingEvent.name, dispatchingEvent.args);
+      var callbacks = this.cloneCallbacks(dispatchingEvent.name);
 
       for (var cbIt = 0; cbIt < callbacks.length; ++cbIt) {
         var cb = callbacks[cbIt];
@@ -54,33 +133,63 @@
     }
   };
 
-  EventEmitterUtils.setDispatchingTimer = function () {
-    var events = this._events;
+  EventDispatcher.prototype.setLogger = function (logger) {
+    logger = logger || {};
+    logger.name = logger.name || EventDispatcherUtils.generateLoggerName();
+    logger.filters = logger.filters || ['*'];
+    logger.log = logger.log || console.log.bind(console);
 
-    if (!events.timer) {
-      events.timer = setTimeout(EventEmitterUtils.dispatchEvents.bind(this), 0);
+    for (var it = 0; it < logger.filters.length; ++it) {
+      this._loggers[logger.filters[it]] = logger;
+    }
+  };
+
+  EventDispatcher.prototype.clearLogger = function (filters) {
+    if (filters) {
+      for (var it = 0; it < filters.length; ++it) {
+        var eventName = filters[it];
+        this.log('clear logger for', eventName);
+        delete this._loggers[eventName];
+      }
+    }
+    else {
+      this.log('clear all loggers');
+      this._loggers = {};
+    }
+  };
+
+  EventDispatcher.prototype.log = function (description, eventName, extraArgs) {
+    var filters = eventName? ['*', eventName]: Object.keys(this._loggers);
+    eventName = eventName || [];
+    extraArgs = extraArgs || [];
+
+    for (var it = 0; it < filters.length; ++it) {
+      var logger = this._loggers[filters[it]];
+
+      if (logger) {
+        var args = ['[' + logger.name + '] ' + description + ':'].concat(eventName, extraArgs);
+        logger.log.apply(null, args);
+      }
     }
   };
 
 
-  var Avent = {};
+  var EventEmitter = function () {
+    this._eventDispatcher = new EventDispatcher();
+  };
 
-  Avent.on = function (name, fn, ctx) {
-    var events = this._events = this._events || EventEmitterUtils.createEventQueue();
-    var eventCallbacks = events.callbacks[name] = events.callbacks[name] || [];
-
-    if (!EventEmitterUtils.callbackExists(eventCallbacks, fn, ctx)) {
-      eventCallbacks.push({
-        fn: fn,
-        ctx: ctx
-      });
+  EventEmitter.prototype.on = function (name, fn, ctx) {
+    if (!this._eventDispatcher) {
+      throw new Error('Uninitialized event dispatcher');
     }
+
+    this._eventDispatcher.addCallback(name, fn, ctx);
 
     return this;
   };
 
-  Avent.once = function (name, fn, ctx) {
-    var off = Avent.off.bind(this);
+  EventEmitter.prototype.once = function (name, fn, ctx) {
+    var off = EventEmitter.prototype.off.bind(this);
     var wrappedFn = function () {
       off(name, fn, ctx);
       fn.apply(ctx, arguments);
@@ -88,77 +197,68 @@
 
     wrappedFn.originalFn = fn;
 
-    return Avent.on.call(this, name, wrappedFn, ctx);
+    return EventEmitter.prototype.on.call(this, name, wrappedFn, ctx);
   };
 
-  Avent.off = function (name, fn, ctx) {
-    var events = this._events;
-
-    if (events) {
-      if (!name && !fn && !ctx) {
-        delete this._events;
+  EventEmitter.prototype.off = function (name, fn, ctx) {
+    if (this._eventDispatcher) {
+      if (name) {
+        this._eventDispatcher.removeCallbacks(name, fn, ctx);
       }
-      else if (name && events.callbacks[name]) {
-        EventEmitterUtils.removeCallbacks(events, name, fn, ctx);
-      }
-      else if (!name) {
-        var names = Object.keys(events.callbacks);
-
-        for (var it = 0; it < names.length; ++it) {
-          EventEmitterUtils.removeCallbacks(events, names[it], fn, ctx);
-        }
+      else {
+        this._eventDispatcher.removeAllCallbacks(fn, ctx);
       }
     }
   };
 
-  Avent.trigger = function (name) {
-    var events = this._events;
-
-    if (events && events.callbacks[name]) {
+  EventEmitter.prototype.trigger = function (name) {
+    if (this._eventDispatcher) {
       var args = [];
 
       for (var it = 0; it < arguments.length; ++it) {
         args.push(arguments[it]);
       }
 
-      events.queue.push({
-        name: name,
-        args: args
-      });
-
-      EventEmitterUtils.setDispatchingTimer.call(this);
+      this._eventDispatcher.scheduleDispatching(name, args);
     }
   };
+
+  EventEmitter.prototype.setLogger = function (logger) {
+    if (this._eventDispatcher) {
+      this._eventDispatcher.setLogger(logger);
+    }
+  };
+
+  EventEmitter.prototype.eventify = function (obj) {
+    obj.on = EventEmitter.prototype.on.bind(this);
+    obj.once = EventEmitter.prototype.once.bind(this);
+    obj.off = EventEmitter.prototype.off.bind(this);
+  };
+
+
+  var initEventEmitter = function () {
+    this._eventEmitter = new EventEmitter();
+    this._eventEmitter.eventify(this);
+  };
+
+
+  var Avent = {};
+
+  Avent.EventEmitter = EventEmitter;
 
   Avent.eventify = function (obj, emitter) {
     if (typeof obj === 'function') {
       obj = obj.prototype;
+      obj._initEventEmitter = initEventEmitter;
+    }
+    else if (!emitter) {
+      emitter = obj._eventEmitter = new EventEmitter();
     }
 
     if (emitter) {
-      obj.on = Avent.on.bind(emitter);
-      obj.on = Avent.once.bind(emitter);
-      obj.on = Avent.off.bind(emitter);
-    }
-    else {
-      obj.on = Avent.on;
-      obj.once = Avent.once;
-      obj.off = Avent.off;
-      obj.trigger = Avent.trigger;
+      emitter.eventify(obj);
     }
   };
-
-
-  var EventEmitter = function () {};
-  EventEmitter.prototype.on = Avent.on;
-  EventEmitter.prototype.once = Avent.once;
-  EventEmitter.prototype.off = Avent.off;
-  EventEmitter.prototype.trigger = Avent.trigger;
-  EventEmitter.prototype.eventify = function (obj) {
-    Avent.eventify(obj, this);
-  };
-
-  Avent.EventEmitter = EventEmitter;
 
   return Avent;
 }));
