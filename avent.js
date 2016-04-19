@@ -229,6 +229,12 @@
     }
   };
 
+  EventEmitter.prototype.clearLogger = function (logger) {
+    if (this._eventDispatcher) {
+      this._eventDispatcher.clearLogger(logger);
+    }
+  };
+
   EventEmitter.prototype.eventify = function (obj) {
     obj.on = EventEmitter.prototype.on.bind(this);
     obj.once = EventEmitter.prototype.once.bind(this);
@@ -251,11 +257,11 @@
       obj = obj.prototype;
       obj._initEventEmitter = initEventEmitter;
     }
-    else if (!emitter) {
-      emitter = obj._eventEmitter = new EventEmitter();
-    }
+    else {
+      if (!emitter) {
+        emitter = obj._eventEmitter = new EventEmitter();
+      }
 
-    if (emitter) {
       emitter.eventify(obj);
     }
   };
