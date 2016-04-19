@@ -20,7 +20,7 @@
   };
 
   EventDispatcherUtils.isCallbackInContext = function (cb, ctx) {
-    return cb.ctx = ctx;
+    return cb.ctx === ctx;
   };
 
 
