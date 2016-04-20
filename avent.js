@@ -69,23 +69,31 @@
     }
   };
 
+  EventDispatcher.prototype.filterOutDeadCallbacks = function (name, fn, ctx) {
+    var keptCallbacks = [];
+    var currentCallbacks = this._callbacks[name] || [];
+
+    for (var it = 0; it < currentCallbacks.length; ++it) {
+      var cb = currentCallbacks[it];
+      var sameFn = EventDispatcherUtils.isCallbackEqualToFn(cb, fn);
+      var sameCtx = EventDispatcherUtils.isCallbackInContext(cb, ctx);
+      var isDeadCb = (fn && sameFn && ctx && sameCtx) || (fn && sameFn && !ctx) || (!fn && ctx && sameCtx);
+
+      if (!isDeadCb) {
+        keptCallbacks.push(cb);
+      }
+    }
+
+    return keptCallbacks;
+  };
+
   EventDispatcher.prototype.removeCallbacks = function (name, fn, ctx) {
     this.log('remove callbacks for', name, [fn, ctx]);
 
     var keptCallbacks = [];
-    var currentCallbacks = this._callbacks[name] || [];
 
     if (fn || ctx) {
-      for (var it = 0; it < currentCallbacks.length; ++it) {
-        var cb = currentCallbacks[it];
-        var sameFn = EventDispatcherUtils.isCallbackEqualToFn(cb, fn);
-        var sameCtx = EventDispatcherUtils.isCallbackInContext(cb, ctx);
-        var isDeadCb = (fn && sameFn && ctx && sameCtx) || (fn && sameFn && !ctx) || (!fn && ctx && sameCtx);
-
-        if (!isDeadCb) {
-          keptCallbacks.push(cb);
-        }
-      }
+      keptCallbacks = this.filterOutDeadCallbacks(name, fn, ctx);
     }
 
     if (keptCallbacks.length === 0) {
