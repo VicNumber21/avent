@@ -127,4 +127,10 @@ describe('On', function () {
 
     ctx.e.completeTest(done, ctx.logger, [expect, expect, expect]);
   });
+
+  it('throws error if not initialized properly', function () {
+    delete ctx.e._eventEmitter._eventDispatcher;
+
+    expect(ctx.e.on.bind(ctx.e)).to.throw(Error, /Avent: uninitialized event dispatcher/);
+  });
 });

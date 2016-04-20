@@ -184,7 +184,7 @@
 
   EventEmitter.prototype.on = function (name, fn, ctx) {
     if (!this._eventDispatcher) {
-      throw new Error('Uninitialized event dispatcher');
+      throw new Error('Avent: uninitialized event dispatcher');
     }
 
     this._eventDispatcher.addCallback(name, fn, ctx);
