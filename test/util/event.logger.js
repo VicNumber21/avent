@@ -10,7 +10,7 @@ EventLogger.prototype._logger = function (name) {
   });
 };
 
-EventLogger.prototype.logEvent = function (name) {
+EventLogger.prototype.createCallback = function (name) {
   return this._logger.bind(this, name);
 };
 
