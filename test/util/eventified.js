@@ -1,20 +1,24 @@
-var expect = require('chai').expect;
 var Avent = require('../../avent');
 
-var Eventified = function () {
+
+var createEventifiedObject = function () {
+  var eventifiedObject = {};
+  Avent.eventify(eventifiedObject);
+  eventifiedObject.trigger = eventifiedObject._eventEmitter.trigger.bind(eventifiedObject._eventEmitter);
+
+  return eventifiedObject;
+};
+
+
+var EventifiedClass = function () {
   this._initEventEmitter();
   this.trigger = this._eventEmitter.trigger.bind(this._eventEmitter);
 };
 
-Eventified.prototype.completeTest = function (done, logger, expected) {
-  this.on('done', function () {
-    expect(logger.eventLog()).to.be.deep.equal(expected);
-    done();
-  });
+Avent.eventify(EventifiedClass);
 
-  this.trigger('done');
+
+module.exports = {
+  EventifiedClass: EventifiedClass,
+  createEventifiedObject: createEventifiedObject
 };
-
-Avent.eventify(Eventified);
-
-module.exports = Eventified;
