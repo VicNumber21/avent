@@ -21,16 +21,20 @@ Context.prototype.append = function (result) {
 };
 
 Context.prototype.completeTest = function (done) {
-  this.e.on('done', function () {
+  this.e.on('beforeToCompleteTest', function () {
     if (this.beforeToCompleteTest) {
       this.beforeToCompleteTest();
     }
 
-    expect(this._logger.eventLog()).to.be.deep.equal(this._expected);
-    done();
+    this.e.on('done', function () {
+      expect(this._logger.eventLog()).to.be.deep.equal(this._expected);
+      done();
+    }, this);
+
+    this.e.trigger('done');
   }, this);
 
-  this.e.trigger('done');
+  this.e.trigger('beforeToCompleteTest');
 };
 
 
