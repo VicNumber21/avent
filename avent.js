@@ -6,7 +6,7 @@
   } else {
     root.avent = factory();
   }
-}(this, function () {
+}(this, function () { // eslint-disable-line max-statements
   var EventDispatcherUtils = {
     _anonymousId: 0
   };
