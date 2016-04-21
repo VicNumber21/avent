@@ -186,17 +186,17 @@
   };
 
 
-  var EventEmitter = function () {
-  };
+  var EventEmitter = function () {};
+  var eep = EventEmitter.prototype;
 
-  EventEmitter.prototype.on = function (name, fn, ctx) {
-    EventEmitter.prototype._eventDispatcher.call(this).addCallback(name, fn, ctx);
+  eep.on = function (name, fn, ctx) {
+    eep._eventDispatcher.call(this).addCallback(name, fn, ctx);
 
     return this;
   };
 
-  EventEmitter.prototype.once = function (name, fn, ctx) {
-    var off = EventEmitter.prototype.off.bind(this);
+  eep.once = function (name, fn, ctx) {
+    var off = eep.off.bind(this);
     var wrappedFn = function () {
       off(name, fn, ctx);
       fn.apply(ctx, arguments);
@@ -204,11 +204,11 @@
 
     wrappedFn.originalFn = fn;
 
-    return EventEmitter.prototype.on.call(this, name, wrappedFn, ctx);
+    return eep.on.call(this, name, wrappedFn, ctx);
   };
 
-  EventEmitter.prototype.off = function (name, fn, ctx) {
-    var dispatcher = EventEmitter.prototype._eventDispatcher.call(this);
+  eep.off = function (name, fn, ctx) {
+    var dispatcher = eep._eventDispatcher.call(this);
 
     if (name) {
       dispatcher.removeCallbacks(name, fn, ctx);
@@ -218,31 +218,31 @@
     }
   };
 
-  EventEmitter.prototype.trigger = function (name) {
+  eep.trigger = function (name) {
     var args = [];
 
     for (var it = 1; it < arguments.length; ++it) {
       args.push(arguments[it]);
     }
 
-    EventEmitter.prototype._eventDispatcher.call(this).scheduleDispatching(name, args);
+    eep._eventDispatcher.call(this).scheduleDispatching(name, args);
   };
 
-  EventEmitter.prototype.setLogger = function (logger) {
-    EventEmitter.prototype._eventDispatcher.call(this).setLogger(logger);
+  eep.setLogger = function (logger) {
+    eep._eventDispatcher.call(this).setLogger(logger);
   };
 
-  EventEmitter.prototype.clearLogger = function (logger) {
-    EventEmitter.prototype._eventDispatcher.call(this).clearLogger(logger);
+  eep.clearLogger = function (logger) {
+    eep._eventDispatcher.call(this).clearLogger(logger);
   };
 
-  EventEmitter.prototype.eventify = function (obj) {
-    obj.on = EventEmitter.prototype.on.bind(this);
-    obj.once = EventEmitter.prototype.once.bind(this);
-    obj.off = EventEmitter.prototype.off.bind(this);
+  eep.eventify = function (obj) {
+    obj.on = eep.on.bind(this);
+    obj.once = eep.once.bind(this);
+    obj.off = eep.off.bind(this);
   };
 
-  EventEmitter.prototype._eventDispatcher = function () {
+  eep._eventDispatcher = function () {
     if (!this._dispatcher) {
       this._dispatcher = new EventDispatcher();
     }
