@@ -187,15 +187,10 @@
 
 
   var EventEmitter = function () {
-    this._eventDispatcher = new EventDispatcher();
   };
 
   EventEmitter.prototype.on = function (name, fn, ctx) {
-    if (!this._eventDispatcher) {
-      throw new Error('Avent: uninitialized event dispatcher');
-    }
-
-    this._eventDispatcher.addCallback(name, fn, ctx);
+    EventEmitter.prototype._eventDispatcher.call(this).addCallback(name, fn, ctx);
 
     return this;
   };
@@ -213,44 +208,46 @@
   };
 
   EventEmitter.prototype.off = function (name, fn, ctx) {
-    if (this._eventDispatcher) {
-      if (name) {
-        this._eventDispatcher.removeCallbacks(name, fn, ctx);
-      }
-      else {
-        this._eventDispatcher.removeAllCallbacks(fn, ctx);
-      }
+    var dispatcher = EventEmitter.prototype._eventDispatcher.call(this);
+
+    if (name) {
+      dispatcher.removeCallbacks(name, fn, ctx);
+    }
+    else {
+      dispatcher.removeAllCallbacks(fn, ctx);
     }
   };
 
   EventEmitter.prototype.trigger = function (name) {
-    if (this._eventDispatcher) {
-      var args = [];
+    var args = [];
 
-      for (var it = 1; it < arguments.length; ++it) {
-        args.push(arguments[it]);
-      }
-
-      this._eventDispatcher.scheduleDispatching(name, args);
+    for (var it = 1; it < arguments.length; ++it) {
+      args.push(arguments[it]);
     }
+
+    EventEmitter.prototype._eventDispatcher.call(this).scheduleDispatching(name, args);
   };
 
   EventEmitter.prototype.setLogger = function (logger) {
-    if (this._eventDispatcher) {
-      this._eventDispatcher.setLogger(logger);
-    }
+    EventEmitter.prototype._eventDispatcher.call(this).setLogger(logger);
   };
 
   EventEmitter.prototype.clearLogger = function (logger) {
-    if (this._eventDispatcher) {
-      this._eventDispatcher.clearLogger(logger);
-    }
+    EventEmitter.prototype._eventDispatcher.call(this).clearLogger(logger);
   };
 
   EventEmitter.prototype.eventify = function (obj) {
     obj.on = EventEmitter.prototype.on.bind(this);
     obj.once = EventEmitter.prototype.once.bind(this);
     obj.off = EventEmitter.prototype.off.bind(this);
+  };
+
+  EventEmitter.prototype._eventDispatcher = function () {
+    if (!this._dispatcher) {
+      this._dispatcher = new EventDispatcher();
+    }
+
+    return this._dispatcher;
   };
 
 

@@ -1,4 +1,3 @@
-var expect = require('chai').expect;
 var Eventified = require('./util/eventified');
 var EventLogger = require('./util/event.logger');
 
@@ -26,11 +25,5 @@ describe('Once', function () {
     ctx.e.trigger('fire');
     ctx.e.trigger('fire', 1, 2, 3, 4, 5, 6);
     ctx.e.completeTest(done, ctx.logger,[expect]);
-  });
-
-  it('throws error if not initialized properly', function () {
-    delete ctx.e._eventEmitter._eventDispatcher;
-
-    expect(ctx.e.once.bind(ctx.e)).to.throw(Error, /Avent: uninitialized event dispatcher/);
   });
 });
