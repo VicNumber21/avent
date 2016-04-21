@@ -308,6 +308,39 @@ describe('Off', function () {
     ctx.completeTest(done);
   });
 
+  it('removes "once" events by callback', function (done) {
+    var cb = ctx.createCallback('fn');
+    ctx.e.once('1', cb);
+    ctx.e.once('1', cb, {});
+    ctx.e.once('2', cb, {});
+    ctx.e.once('3', cb, {});
+
+    ctx.beforeToCompleteTest = function () {
+      ctx.e.off(null, cb);
+      ctx.e.trigger('1');
+      ctx.e.trigger('2');
+      ctx.e.trigger('3');
+    };
+
+    ctx.completeTest(done);
+  });
+
+  it('removes "once" events by context', function (done) {
+    var context = 'my events';
+    ctx.e.once('my1', ctx.createCallback('my1'), context);
+    ctx.e.once('my2', ctx.createCallback('my2'), context);
+    ctx.e.once('my3', ctx.createCallback('my3'), context);
+
+    ctx.beforeToCompleteTest = function () {
+      ctx.e.off(null, null, context);
+      ctx.e.trigger('my3');
+      ctx.e.trigger('my2');
+      ctx.e.trigger('my1');
+    };
+
+    ctx.completeTest(done);
+  });
+
   it('removes all events', function (done) {
     var context = 'my events';
     ctx.e.on('my1', ctx.createCallback('my1'), context);
