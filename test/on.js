@@ -78,22 +78,22 @@ describe('On', function () {
 
   it('can be added just once without context', function (done) {
     var cb = ctx.createCallback('event');
-    ctx.e.on('event', cb);
+    ctx.e.on('event', cb); /* ===> */ ctx.append({name: 'event', args: []});
     ctx.e.on('event', cb);
     ctx.e.on('event', cb);
 
-    ctx.e.trigger('event'); /* ===> */ ctx.append({name: 'event', args: []});
+    ctx.e.trigger('event');
 
     ctx.completeTest(done);
   });
 
   it('can be added just once in the same context', function (done) {
     var cb = ctx.createCallback('boom');
-    ctx.e.on('boom', cb, ctx);
+    ctx.e.on('boom', cb, ctx); /* ===> */ ctx.append({name: 'boom', args: []});
     ctx.e.on('boom', cb, ctx);
     ctx.e.on('boom', cb, ctx);
 
-    ctx.e.trigger('boom'); /* ===> */ ctx.append({name: 'boom', args: []});
+    ctx.e.trigger('boom');
 
     ctx.completeTest(done);
   });

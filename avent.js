@@ -16,7 +16,10 @@
   };
 
   EventDispatcherUtils.isCallbackEqualToFn = function (cb, fn) {
-    return (cb.fn === fn) || (cb.fn.originalFn && cb.fn.originalFn === fn);
+    var cbFn = cb.fn.originalFn || cb.fn;
+    var newFn = fn && fn.originalFn? fn.originalFn: fn;
+
+    return cbFn === newFn;
   };
 
   EventDispatcherUtils.isCallbackInContext = function (cb, ctx) {
@@ -30,28 +33,42 @@
     this._loggers = {};
   };
 
-  EventDispatcher.prototype.callbackExists = function (name, fn, ctx) {
+  EventDispatcher.prototype.findCallback = function (name, fn, ctx) {
     var ret = false;
     var callbacks = this._callbacks[name] || [];
 
     for (var it = 0; !ret && it < callbacks.length; ++it) {
       var cb = callbacks[it];
-      ret = EventDispatcherUtils.isCallbackEqualToFn(cb, fn) && EventDispatcherUtils.isCallbackInContext(cb, ctx);
+
+      if (EventDispatcherUtils.isCallbackEqualToFn(cb, fn) && EventDispatcherUtils.isCallbackInContext(cb, ctx)) {
+        ret = {
+          cb: cb,
+          index: it
+        }
+      }
     }
 
     return ret;
   };
 
   EventDispatcher.prototype.addCallback = function (name, fn, ctx) {
-    if (!this.callbackExists(name, fn, ctx)) {
+    var newCb = {fn: fn, ctx: ctx};
+    var found = this.findCallback(name, fn, ctx);
+
+    if (found && found.cb.fn.originalFn && !fn.originalFn) {
+      this.log('replace callback for', name, [fn, ctx]);
+
+      this._callbacks[name][found.index] = newCb;
+    }
+    else if (!found) {
       this.log('add callback for', name, [fn, ctx]);
 
       var callbacks = this._callbacks[name] = this._callbacks[name] || [];
 
-      callbacks.push({
-        fn: fn,
-        ctx: ctx
-      });
+      callbacks.push(newCb);
+    }
+    else {
+      this.log('ignore callback for', name, [fn, ctx]);
     }
   };
 
