@@ -7,6 +7,8 @@
     root.avent = factory();
   }
 }(this, function () { // eslint-disable-line max-statements
+  var Avent = {};
+
   var EventDispatcherUtils = {
     _anonymousId: 0
   };
@@ -30,7 +32,11 @@
   var EventDispatcher = function () {
     this._queue = [];
     this._callbacks = {};
-    this._loggers = {};
+    this._logger = new Avent.EventLogger();
+  };
+  
+  EventDispatcher.prototype.logger = function () {
+    return this._logger;
   };
 
   EventDispatcher.prototype.findCallback = function (name, fn, ctx) {
@@ -56,19 +62,19 @@
     var found = this.findCallback(name, fn, ctx);
 
     if (found && found.cb.fn.originalFn && !fn.originalFn) {
-      this.log('replace callback for', name, [fn, ctx]);
+      this.logger().logDebug(['replace callback for event', name, fn, ctx]);
 
       this._callbacks[name][found.index] = newCb;
     }
     else if (!found) {
-      this.log('add callback for', name, [fn, ctx]);
+      this.logger().logDebug(['add callback for event', name, fn, ctx]);
 
       var callbacks = this._callbacks[name] = this._callbacks[name] || [];
 
       callbacks.push(newCb);
     }
     else {
-      this.log('ignore callback for', name, [fn, ctx]);
+      this.logger().logDebug(['ignore callback for event', name, fn, ctx]);
     }
   };
 
@@ -81,7 +87,7 @@
       }
     }
     else {
-      this.log('remove all callbacks');
+      this.logger().logDebug(['remove all callbacks']);
       this._callbacks = {};
     }
   };
@@ -105,7 +111,7 @@
   };
 
   EventDispatcher.prototype.removeCallbacks = function (name, fn, ctx) {
-    this.log('remove callbacks for', name, [fn, ctx]);
+    this.logger().logDebug(['remove callbacks for event', name, fn, ctx]);
 
     var keptCallbacks = [];
 
@@ -128,7 +134,7 @@
   };
 
   EventDispatcher.prototype.scheduleDispatching = function (name, args) {
-    this.log('schedule dispatching for', name, args);
+    this.logger().logEvent([name, '=>', args]);
 
     if (this._callbacks[name]) {
       this._queue.push({
@@ -150,7 +156,7 @@
 
     for (var it = 0; it < queue.length; ++it) {
       var dispatchingEvent = queue[it];
-      this.log('dispatching', dispatchingEvent.name, dispatchingEvent.args);
+      this.logger().logDebug(['dispatching event', dispatchingEvent.name, '=>', dispatchingEvent.args]);
       var callbacks = this.cloneCallbacks(dispatchingEvent.name);
 
       for (var cbIt = 0; cbIt < callbacks.length; ++cbIt) {
@@ -158,48 +164,139 @@
         cb.fn.apply(cb.ctx, dispatchingEvent.args);
       }
 
-      this.log('dispatched', dispatchingEvent.name, dispatchingEvent.args);
+      this.logger().logDebug(['dispatched event', dispatchingEvent.name, '=>', dispatchingEvent.args]);
     }
   };
 
-  EventDispatcher.prototype.setLogger = function (logger) {
-    logger = logger || {};
-    logger.name = logger.name || EventDispatcherUtils.generateLoggerName();
-    logger.filters = logger.filters || ['*'];
-    logger.log = logger.log || console.log.bind(console);
 
-    for (var it = 0; it < logger.filters.length; ++it) {
-      this._loggers[logger.filters[it]] = logger;
+  var EventLogger = function (enabled, debugMode) {
+    this._fnFilters = [];
+    this._eventFilters = {};
+
+    if (enabled) {
+      this.on();
+    }
+
+    if (debugMode) {
+      this.debugOn();
     }
   };
+  
+  EventLogger.Type = {
+    Event: 0,
+    Debug: 1
+  };
+  
+  EventLogger.constTrue = function () {
+    return true;
+  };
+  
+  EventLogger.constTrueDebug = function () {
+    return true;
+  };
 
-  EventDispatcher.prototype.clearLogger = function (filters) {
-    if (filters) {
-      for (var it = 0; it < filters.length; ++it) {
-        var eventName = filters[it];
-        this.log('clear logger for', eventName);
-        delete this._loggers[eventName];
+  EventLogger.prototype.forEachFilter = function (eventsOrFns, cb) {
+    if (!(eventsOrFns instanceof Array)) {
+      eventsOrFns = [eventsOrFns];
+    }
+
+    for (var it = 0; it < eventsOrFns.length; ++it) {
+      var filter = eventsOrFns[it];
+      var filterType = typeof filter;
+
+      if (filterType !== 'string' && filterType !== 'function') {
+        filter = '*';
+        filterType = 'string';
       }
+
+      cb(filter, filterType);
+    }
+  };
+
+  EventLogger.prototype.on = function (eventsOrFns) {
+    eventsOrFns = eventsOrFns || [EventLogger.constTrue];
+    
+    this.forEachFilter(eventsOrFns, (function (filter, filterType) {
+      if (filterType === 'string') {
+        this._eventFilters[filter] = true;
+      }
+      else {
+        var index = this._fnFilters.indexOf(filter);
+
+        if (index < 0) {
+          this._fnFilters.push(filter);
+        }
+      }
+    }).bind(this));
+  };
+
+  EventLogger.prototype.off = function (eventsOrFns) {
+    if (eventsOrFns) {
+      this.forEachFilter(eventsOrFns, (function (filter, filterType) {
+        if (filterType === 'string') {
+          delete this._eventFilters[filter];
+        }
+        else {
+          var index = this._fnFilters.indexOf(filter);
+
+          if (index >= 0) {
+            this._fnFilters.splice(index, 1);
+          }
+        }
+      }).bind(this));
     }
     else {
-      this.log('clear all loggers');
-      this._loggers = {};
+      this._fnFilters = [];
+      this._eventFilters = {};
     }
   };
 
-  EventDispatcher.prototype.log = function (description, eventName, extraArgs) {
-    var filters = eventName? ['*', eventName]: Object.keys(this._loggers);
-    eventName = eventName || [];
-    extraArgs = extraArgs || [];
-
-    for (var it = 0; it < filters.length; ++it) {
-      var logger = this._loggers[filters[it]];
-
-      if (logger) {
-        var args = ['[' + logger.name + '] ' + description + ':'].concat(eventName, extraArgs);
-        logger.log.apply(null, args);
-      }
+  EventLogger.prototype.debugOn = function () {
+    if (!this.isDebugOn()) {
+      this._fnFilters.unshift(EventLogger.constTrueDebug);
     }
+  };
+
+  EventLogger.prototype.debugOff = function () {
+    this.off(EventLogger.constTrueDebug);
+  };
+  
+  EventLogger.prototype.isOn = function () {
+    return this._fnFilters.length > 0 || Object.keys(this._eventFilters).length > 0;
+  };
+  
+  EventLogger.prototype.isDebugOn = function () {
+    return this._fnFilters[0] === EventLogger.constTrueDebug;
+  };
+
+  EventLogger.prototype.logEvent = function (loggerArgs) {
+    var eventName = loggerArgs[0];
+    var isEventLogOn = this._eventFilters[eventName];
+    
+    for (var it =0; !isEventLogOn && it < this._fnFilters.length; ++ it) {
+      isEventLogOn = this._fnFilters[it](loggerArgs);
+    }
+    
+    if (isEventLogOn) {
+      this.log(EventLogger.Type.Event, loggerArgs);
+    }
+  };
+
+  EventLogger.prototype.logDebug = function (loggerArgs) {
+    if (this.isDebugOn()) {
+      this.log(EventLogger.Type.Debug, loggerArgs);
+    }
+  };
+
+  EventLogger.prototype.log = function (type, loggerArgs) {
+    var formattedArgs = this.formatLog(type, loggerArgs);
+    this.printLog.apply(this, formattedArgs);
+  };
+
+  EventLogger.prototype.printLog = console.log.bind(console);
+
+  EventLogger.prototype.formatLog = function (type, loggerArgs) {
+    return (['Avent:']).concat(loggerArgs);
   };
 
 
@@ -245,12 +342,8 @@
     eep._eventDispatcher.call(this).scheduleDispatching(name, args);
   };
 
-  eep.setLogger = function (logger) {
-    eep._eventDispatcher.call(this).setLogger(logger);
-  };
-
-  eep.clearLogger = function (logger) {
-    eep._eventDispatcher.call(this).clearLogger(logger);
+  eep.logger = function () {
+    return eep._eventDispatcher.call(this).logger();
   };
 
   eep.eventify = function (obj) {
@@ -274,8 +367,6 @@
   };
 
 
-  var Avent = {};
-
   Avent.EventEmitter = EventEmitter;
 
   Avent.eventify = function (obj, emitter) {
@@ -290,6 +381,12 @@
 
       emitter.eventify(obj);
     }
+  };
+  
+  Avent.EventLogger = EventLogger;
+  
+  Avent.setCustomLogger = function (logger) {
+    Avent.EventLogger = logger;
   };
 
   return Avent;

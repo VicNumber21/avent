@@ -13,8 +13,7 @@ describe('Eventify', function () {
 
     expect(eventified).has.ownProperty('_eventEmitter');
     expect(eventified._eventEmitter).to.respondTo('trigger');
-    expect(eventified._eventEmitter).to.respondTo('setLogger');
-    expect(eventified._eventEmitter).to.respondTo('clearLogger');
+    expect(eventified._eventEmitter).to.respondTo('logger');
   });
 
   it('works with object prototype', function () {
@@ -32,8 +31,7 @@ describe('Eventify', function () {
 
     expect(eventified).has.ownProperty('_eventEmitter');
     expect(eventified._eventEmitter).to.respondTo('trigger');
-    expect(eventified._eventEmitter).to.respondTo('setLogger');
-    expect(eventified._eventEmitter).to.respondTo('clearLogger');
+    expect(eventified._eventEmitter).to.respondTo('logger');
   });
 
   it('works with custom emitter', function () {
@@ -51,7 +49,6 @@ describe('Eventify', function () {
 
     expect(eventified).has.ownProperty('_emitter');
     expect(eventified._emitter).to.respondTo('trigger');
-    expect(eventified._emitter).to.respondTo('setLogger');
-    expect(eventified._emitter).to.respondTo('clearLogger');
+    expect(eventified._emitter).to.respondTo('logger');
   });
 });
