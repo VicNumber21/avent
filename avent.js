@@ -17,11 +17,12 @@
     return 'Anonymous Avent ' + (++this._anonymousId);
   };
 
-  EventDispatcherUtils.isCallbackEqualToFn = function (cb, fn) {
-    var cbFn = cb.fn.originalFn || cb.fn;
-    var newFn = fn && fn.originalFn? fn.originalFn: fn;
+  EventDispatcherUtils.originalFn = function (fn) {
+    return fn && fn.originalFn? fn.originalFn: fn;
+  };
 
-    return cbFn === newFn;
+  EventDispatcherUtils.isCallbackEqualToFn = function (cb, fn) {
+    return EventDispatcherUtils.originalFn(cb.fn) === EventDispatcherUtils.originalFn(fn);
   };
 
   EventDispatcherUtils.isCallbackInContext = function (cb, ctx) {
@@ -62,19 +63,19 @@
     var found = this.findCallback(name, fn, ctx);
 
     if (found && found.cb.fn.originalFn && !fn.originalFn) {
-      this.logger().logDebug(['replace callback for event', name, fn, ctx]);
+      this.logger().logDebug(['replace callback for event', name, EventDispatcherUtils.originalFn(fn), ctx]);
 
       this._callbacks[name][found.index] = newCb;
     }
     else if (!found) {
-      this.logger().logDebug(['add callback for event', name, fn, ctx]);
+      this.logger().logDebug(['add callback for event', name, EventDispatcherUtils.originalFn(fn), ctx]);
 
       var callbacks = this._callbacks[name] = this._callbacks[name] || [];
 
       callbacks.push(newCb);
     }
     else {
-      this.logger().logDebug(['ignore callback for event', name, fn, ctx]);
+      this.logger().logDebug(['ignore callback for event', name, EventDispatcherUtils.originalFn(fn), ctx]);
     }
   };
 
@@ -111,7 +112,7 @@
   };
 
   EventDispatcher.prototype.removeCallbacks = function (name, fn, ctx) {
-    this.logger().logDebug(['remove callbacks for event', name, fn, ctx]);
+    this.logger().logDebug(['remove callbacks for event', name, EventDispatcherUtils.originalFn(fn), ctx]);
 
     var keptCallbacks = [];
 
@@ -134,7 +135,7 @@
   };
 
   EventDispatcher.prototype.scheduleDispatching = function (name, args) {
-    this.logger().logEvent([name, '=>', args]);
+    this.logger().logEvent(name, args);
 
     if (this._callbacks[name]) {
       this._queue.push({
@@ -154,10 +155,14 @@
     var queue = this._queue;
     this._queue = [];
 
+    this.logger().logDebug(['need to dispatch', queue.length, 'event(s)']);
+
     for (var it = 0; it < queue.length; ++it) {
       var dispatchingEvent = queue[it];
       this.logger().logDebug(['dispatching event', dispatchingEvent.name, '=>', dispatchingEvent.args]);
+
       var callbacks = this.cloneCallbacks(dispatchingEvent.name);
+      this.logger().logDebug([callbacks.length, 'callback(s) found for event', dispatchingEvent.name]);
 
       for (var cbIt = 0; cbIt < callbacks.length; ++cbIt) {
         var cb = callbacks[cbIt];
@@ -261,24 +266,19 @@
     this.off(EventLogger.constTrueDebug);
   };
   
-  EventLogger.prototype.isOn = function () {
-    return this._fnFilters.length > 0 || Object.keys(this._eventFilters).length > 0;
-  };
-  
   EventLogger.prototype.isDebugOn = function () {
     return this._fnFilters[0] === EventLogger.constTrueDebug;
   };
 
-  EventLogger.prototype.logEvent = function (loggerArgs) {
-    var eventName = loggerArgs[0];
-    var isEventLogOn = this._eventFilters[eventName];
+  EventLogger.prototype.logEvent = function (name, args) {
+    var isEventLogOn = this._eventFilters[name];
     
     for (var it =0; !isEventLogOn && it < this._fnFilters.length; ++ it) {
-      isEventLogOn = this._fnFilters[it](loggerArgs);
+      isEventLogOn = this._fnFilters[it](name, args);
     }
     
     if (isEventLogOn) {
-      this.log(EventLogger.Type.Event, loggerArgs);
+      this.log(EventLogger.Type.Event, [name, '=>', args]);
     }
   };
 
