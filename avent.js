@@ -214,7 +214,7 @@
         filterType = 'string';
       }
 
-      cb(filter, filterType);
+      cb(filter, filterType)// eslint-disable-line callback-return;
     }
   };
 
