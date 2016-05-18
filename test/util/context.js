@@ -1,15 +1,15 @@
 var expect = require('chai').expect;
-var EventLogger = require('./event.logger');
+var EventTracker = require('./event.tracker');
 
 
 var Context = function (createEventified) {
   this.e = createEventified();
-  this._logger = new EventLogger();
+  this._tracker = new EventTracker();
   this._expected = [];
 };
 
 Context.prototype.createCallback = function (name) {
-  return this._logger.createCallback(name);
+  return this._tracker.createCallback(name);
 };
 
 Context.prototype.prepend = function (result) {
@@ -27,7 +27,7 @@ Context.prototype.completeTest = function (done) {
     }
 
     this.e.once('done', function () {
-      expect(this._logger.eventLog()).to.be.deep.equal(this._expected);
+      expect(this._tracker.eventLog()).to.be.deep.equal(this._expected);
       done();
     }, this);
 
