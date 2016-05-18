@@ -2,25 +2,25 @@ var expect = require('chai').expect;
 var EventTracker = require('./event.tracker');
 
 
-var Context = function (createEventified) {
+var EventContext = function (createEventified) {
   this.e = createEventified();
   this._tracker = new EventTracker();
   this._expected = [];
 };
 
-Context.prototype.createCallback = function (name) {
+EventContext.prototype.createCallback = function (name) {
   return this._tracker.createCallback(name);
 };
 
-Context.prototype.prepend = function (result) {
+EventContext.prototype.prepend = function (result) {
   this._expected.unshift(result);
 };
 
-Context.prototype.append = function (result) {
+EventContext.prototype.append = function (result) {
   this._expected.push(result);
 };
 
-Context.prototype.completeTest = function (done) {
+EventContext.prototype.completeTest = function (done) {
   this.e.once('beforeToCompleteTest', function () {
     if (this.beforeToCompleteTest) {
       this.beforeToCompleteTest();
@@ -38,4 +38,4 @@ Context.prototype.completeTest = function (done) {
 };
 
 
-module.exports = Context;
+module.exports = EventContext;

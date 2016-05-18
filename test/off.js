@@ -1,5 +1,5 @@
 var createEventifiedObject = require('./util/eventified').createEventifiedObject;
-var Context = require('./util/context');
+var Context = require('./util/event.context');
 
 
 describe('Off', function () {

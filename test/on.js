@@ -1,5 +1,5 @@
 var Eventified = require('./util/eventified').EventifiedClass;
-var Context = require('./util/context');
+var Context = require('./util/event.context');
 
 
 describe('On', function () {
