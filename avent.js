@@ -11,13 +11,7 @@
 }(this, function () { // eslint-disable-line max-statements
   var Avent = {};
 
-  var EventDispatcherUtils = {
-    _anonymousId: 0
-  };
-
-  EventDispatcherUtils.generateLoggerName = function () {
-    return 'Anonymous Avent ' + (++this._anonymousId);
-  };
+  var EventDispatcherUtils = {};
 
   EventDispatcherUtils.originalFn = function (fn) {
     return fn && fn.originalFn? fn.originalFn: fn;
@@ -176,17 +170,9 @@
   };
 
 
-  var EventLogger = function (enabled, debugMode) {
+  var EventLogger = function () {
     this._fnFilters = [];
     this._eventFilters = {};
-
-    if (enabled) {
-      this.on();
-    }
-
-    if (debugMode) {
-      this.debugOn();
-    }
   };
   
   EventLogger.Type = {
@@ -212,8 +198,7 @@
       var filterType = typeof filter;
 
       if (filterType !== 'string' && filterType !== 'function') {
-        filter = '*';
-        filterType = 'string';
+        throw new Error('Avent: logger filter must be either string or function');
       }
 
       cb(filter, filterType)

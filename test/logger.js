@@ -1,5 +1,6 @@
 var Eventified = require('./util/eventified').EventifiedClass;
 var Context = require('./util/logger.context');
+var expect = require('chai').expect;
 
 
 describe('Logger', function () {
@@ -55,6 +56,48 @@ describe('Logger', function () {
     ctx.logger().off();
     ctx.e.trigger('second', 2);
     ctx.completeTest(done);
+  });
+  
+  it('disables just a requested filter (string)', function (done) {
+    ctx.logger().on(['first', 'second']);
+    var cb = function () {};
+    ctx.e.on('first', cb);
+    ctx.e.on('second', cb);
+    ctx.e.trigger('first'); /* ===> */ ctx.append({name: 'log', args: ['Avent:', 'first', '=>', []]});
+    ctx.e.trigger('second', 2); /* ===> */ ctx.append({name: 'log', args: ['Avent:', 'second', '=>', [2]]});
+    ctx.logger().off('second');
+    ctx.e.trigger('first', 'test'); /* ===> */ ctx.append({name: 'log', args: ['Avent:', 'first', '=>', ['test']]});
+    ctx.e.trigger('second');
+    ctx.completeTest(done);
+  });
+  
+  it('disables just a requested filter (fn)', function (done) {
+    var firstFilter = function (name) {
+      return name === 'first';
+    };
+    
+    var secondFilter = function (name) {
+      return name === 'second';
+    };
+    ctx.logger().on(firstFilter);
+    ctx.logger().on(secondFilter);
+    var cb = function () {};
+    ctx.e.on('first', cb);
+    ctx.e.on('second', cb);
+    ctx.e.trigger('first'); /* ===> */ ctx.append({name: 'log', args: ['Avent:', 'first', '=>', []]});
+    ctx.e.trigger('second', 2); /* ===> */ ctx.append({name: 'log', args: ['Avent:', 'second', '=>', [2]]});
+    ctx.logger().off(secondFilter);
+    ctx.e.trigger('first', 'test'); /* ===> */ ctx.append({name: 'log', args: ['Avent:', 'first', '=>', ['test']]});
+    ctx.e.trigger('second');
+    ctx.completeTest(done);
+  });
+  
+  it('throws error if filter is not string or function', function () {
+    var testFn = function () {
+      ctx.logger().on(123)
+    };
+    
+    expect(testFn).to.throw(Error);
   });
 
   it('logs all events with arguments and debug info if debug is on', function (done) {
