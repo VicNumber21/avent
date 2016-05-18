@@ -1,3 +1,5 @@
+/* eslint-disable callback-return */
+
 (function (root, factory) {
   if (typeof define === 'function' && define.amd) {
     define([], factory);
@@ -214,7 +216,7 @@
         filterType = 'string';
       }
 
-      cb(filter, filterType)// eslint-disable-line callback-return;
+      cb(filter, filterType)
     }
   };
 
