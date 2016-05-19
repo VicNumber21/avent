@@ -120,7 +120,7 @@ TODO
 
 TODO
 
-### Renaming of methods
+### Renaming methods
 
 TODO
 
