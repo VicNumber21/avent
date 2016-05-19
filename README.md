@@ -93,7 +93,7 @@ It served my needs for a while but at some point I was reported about a defect w
 events during handling. Most of time ```setTimeout``` worked fine for me, but in some conditions the first triggered
 event was handled after the second triggered one and the order change moved application to wrong state.
 
-There was no clue about why it happened... but I had to fix the defect, so I wrote own event library which guarantied
+There was no clue about why it happened... but I had to fix the defect, so I wrote own event library which guarantees
 preservation of events' order.
 
 And it was the right decision since we started the new project quite soon and the new project did not need Backbone
@@ -103,6 +103,24 @@ This is revisited version of that library with extra features written in hope th
 asynchronous events.
 
 ## Usage
+
+### Avent.eventify
+
+TODO
+
+### Avent.EventEmitter
+
+TODO
+
+### Avent.EventLogger
+
+TODO
+
+### Custom Logger
+
+TODO
+
+### Renaming of methods
 
 TODO
 
